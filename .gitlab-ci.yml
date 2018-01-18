@@ -1,0 +1,35 @@
+image: maven:3-jdk-8
+
+
+variables:
+  MAVEN_CLI_OPTS: "-Dbuild.number=${CI_PIPELINE_ID} -Dmaven.repo.local=/cache/maven.repository --settings .ci/settings.xml"
+  DOCKER_DRIVER: overlay2
+
+stages:
+  - build
+  - test
+  - deploy
+
+
+build_job:
+  stage: build
+  cache:
+      paths:
+        - ./core/target/
+        - /cache/maven.repository
+  script:
+    - mvn clean install -Dmaven.test.skip=true $MAVEN_CLI_OPTS
+
+test_job:
+  stage: test
+  script:
+    - mvn test $MAVEN_CLI_OPTS
+
+
+
+artifactory_deploy:
+  stage: deploy
+  only:
+    - stable-release-1
+  script:
+    - mvn deploy -Dmaven.test.skip=true  $MAVEN_CLI_OPTS
